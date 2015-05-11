@@ -1,4 +1,5 @@
 var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
+var getDataReg  = new RegExp('(?:q=)(.+?)(?:$|&)');
 var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
 var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
 var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
@@ -133,8 +134,11 @@ function combine(elemArr, size){
   }
 }
 
-function parseQuery(){
-  var queryStr = q.value;
+function fillQ(){
+  q.value = parseQuery(q.value);
+}
+
+function parseQuery(queryStr){
   var orArr = queryStr.split('or');
   orArr.every(function(ele1, idx1, arr1){
     var spArr = ele1.split(' ');
@@ -152,25 +156,38 @@ function parseQuery(){
     arr1[idx1] = spArr.join(' ');
     return true;
   });
-  q.value = orArr.join('or');
+  queryStr = orArr.join('or');
+  return queryStr;
 }
 
 var form = document.getElementsByName("f")[0];
-form.addEventListener('submit', parseQuery, true);
-
-var q = document.getElementById('q');
-var queryStr = q.value;
-if(queryStr.match(anyReg) != null){
-  parseQuery();
-  form.submit();
-}
+form.addEventListener('submit', fillQ, true);
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse){
-    if (request.action == 'fillQ'){
-      var q = document.getElementById('q')
-      q.value = request.query;
-      q.focus();
-      sendResponse({success: true});
+    switch (request.action){
+      case 'fillQ':
+        var q = document.getElementById('q');
+        q.value = request.query;
+        q.focus();
+        sendResponse({text: "success"});
+        break;
+      case 'checkGET':
+        var url     = request.url;
+        var matches = url.match(getDataReg);
+        if (matches[1] != null){
+          var queryGet = matches[1];
+          var queryStr = unescape(queryGet);
+          if (queryStr.match(anyReg) != null){
+            queryStr = parseQuery(queryStr);
+            queryStr = escape(queryStr);
+            url = url.replace(queryGet, queryStr);
+            location.replace(url);
+          }
+        }
+        break;
+      default:
+        sendResponse({text: "unrecognized action"});
+        break;
     }
 });

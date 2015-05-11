@@ -19,7 +19,7 @@ function fillq(e){
 
 	chrome.tabs.getSelected(null, function(tab){
 		chrome.tabs.sendMessage(tab.id, {action: 'fillQ', query: query}, {}, function(response){
-			if (response.success){
+			if (response.text == 'success'){
 				window.close();
 			}
 		});
