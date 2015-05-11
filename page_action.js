@@ -5,7 +5,7 @@ function fillq(e){
 			query = 'c:3wu';
 			break;
 		case 'ciStrict':
-			query = 'ci!wu -c:wum';
+			query = 'ci!wu';
 			break;
 		case 'cwLoose' :
 			query = 'cw:gw';
@@ -18,7 +18,11 @@ function fillq(e){
 	};
 
 	chrome.tabs.getSelected(null, function(tab){
-		chrome.tabs.sendMessage(tab.id, {action: 'fillQ', query: query});
+		chrome.tabs.sendMessage(tab.id, {action: 'fillQ', query: query}, {}, function(response){
+			if (response.success){
+				window.close();
+			}
+		});
 	});
 }
 

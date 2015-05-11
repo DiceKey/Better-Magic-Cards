@@ -8,7 +8,7 @@
 
   "page_action": {
     "default_icon": "icon.png",
-    "default_popup": "popup.html"
+    "default_popup": "page_action.html"
   },
 
   "background": {
@@ -18,10 +18,8 @@
 
   "content_scripts": [
     {
-      "matches": ["http://www.magiccards.info/*"],
-      "js": ["bmc.js"],
-      "all_frames" : false,
-      "run_at" : "document_end"
+      "matches": ["http://magiccards.info/*"],
+      "js": ["content_script.js"]
     }
   ],
 

@@ -54,13 +54,11 @@ function cNumeric(inStr){
 
 function ciStrict(inStr){
   if (inStr.match(ciStrictReg) != null){
-    alert('hello');
     var outStr   = '';
     var modIdx   = inStr.indexOf('ci') + 2;
     var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
     var len      = parIdx - modIdx - 1;
     var inColors = inStr.substr(modIdx + 1, len);
-    alert(len);
     if (len > 1){
       outArr  = ['ci:' + inColors];
       var combArr = combine(inColors.split(''), len - 1);
@@ -76,7 +74,6 @@ function ciStrict(inStr){
 
       return outStr;
     }else{
-      alert(inStr + ' -ci:c');
       return inStr + ' -ci:c';
     }
   }
@@ -166,6 +163,7 @@ chrome.runtime.onMessage.addListener(
     if (request.action == 'fillQ'){
       var q = document.getElementById('q')
       q.value = request.query;
-      sendResponse({dom: 'success'});
+      q.focus();
+      sendResponse({success: true});
     }
 });
