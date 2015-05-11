@@ -1,6 +1,9 @@
 # Better-Magic-Cards
 Extension for http://magiccards.info
 
+**Auto-Pagination**  
+> Automatically loads the next page of cards once you scroll to the bottom.
+
 **c[:=!][wubrgmcl012345]+**  
 > Search for cards with a specific number of colors.  
 > *(c:23 returns cards with 2 or 3 colors, c:3wu returns 3-color cards that are white and/or blue, c!3wu returns 3-color cards that are white and blue etc.)*

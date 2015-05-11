@@ -1,5 +1,8 @@
 var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
-var getDataReg  = new RegExp('(?:q=)(.+?)(?:$|&)');
+var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
+var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
+var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
+
 var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
 var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
 var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
@@ -171,11 +174,7 @@ function parseQuery(queryStr){
   return queryStr;
 }
 
-var form = document.getElementsByName("f")[0];
-form.addEventListener('submit', fillQ, true);
-
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse){
+function handleRequests(request, sender, sendResponse){
     switch (request.action){
       case 'fillQ':
         var q = document.getElementById('q');
@@ -185,8 +184,8 @@ chrome.runtime.onMessage.addListener(
         break;
       case 'checkGET':
         var url     = request.url;
-        var matches = url.match(getDataReg);
-        if (matches[1] != null){
+        var matches = url.match(getQueryReg);
+        if (matches != null){
           var queryGet = matches[1];
           var queryStr = unescape(queryGet);
           if (queryStr.match(anyReg) != null){
@@ -201,4 +200,140 @@ chrome.runtime.onMessage.addListener(
         sendResponse({text: "unrecognized action"});
         break;
     }
-});
+}
+
+
+function constructAutoPage(){
+  var body = document.getElementsByTagName('body')[0];
+  var bodyHeight = body.scrollHeight;
+
+  var smallTexts = document.getElementsByTagName('small');
+  var disclaimer = smallTexts[smallTexts.length - 1];
+  disclaimer.setAttribute('id', 'disclaimer');
+
+  var url  = window.location.href;
+  var matches = url.match(getPageReg);
+  if (matches !== null){
+    getPageStr  = matches[0];
+    currentPage = parseInt(matches[1]);
+  }else{
+    getPageStr  = '&p=1';
+    currentPage = 1;
+    url   += '&p=1';
+  }
+
+  var cardsPerPage = 20;
+  var matches = url.match(getViewReg);
+  if (matches !== null){
+    vStr = matches[1];
+    switch(vStr){
+      case 'list':
+      case 'olist':
+        cardsPerPage = 1000;
+        break;
+      case 'scan':
+        cardsPerPage = 15;
+        break;
+      case 'spoiler':
+        cardsPerPage = 600;
+        break;
+      default:
+        break;
+    }
+  }
+
+  var tables = document.getElementsByTagName('table');
+  var pTable = tables[2];
+  //var nextLink   = pTable.getElementsByTagName('a')[0];
+  //nextLink.addEventListener('click', loadNext, true);
+  var totalCards = parseInt(pTable.rows[0].cells[2].innerHTML);
+
+  var output = {
+    url:          url,
+    currentPage:  currentPage,
+    getPageStr:   getPageStr,
+    cardsPerPage: cardsPerPage,
+    totalCards:   totalCards,
+    divHeight:    bodyHeight,
+    disclaimer:   disclaimer,
+    parentDiv:    body,
+    autoPage:     function(){
+      if (this.currentPage * this.cardsPerPage < this.totalCards){
+        oldPageStr = this.getPageStr;
+        this.getPageStr = this.getPageStr.replace(this.currentPage, this.currentPage + 1)
+        this.url = this.url.replace(oldPageStr, this.getPageStr);
+        this.currentPage ++;
+
+        var parentDiv   = this.parentDiv;
+        var currentPage = this.currentPage;
+        var disclaimer  = this.disclaimer;
+        // var getPageStr  = this.getPageStr;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', this.url, true);
+        xhr.onload = function(responseText){
+          var tables = document.getElementsByTagName('table');
+          var lTable = tables[tables.length - 1];
+          var hrs    = document.getElementsByTagName('hr');
+          var lhr    = hrs[hrs.length - 1];
+          var brs    = document.getElementsByTagName('br');
+          var slbr   = brs[brs.length - 2];
+
+          lTable.parentNode.removeChild(lTable);
+          lhr.parentNode.removeChild(lhr);
+          slbr.parentNode.removeChild(slbr);
+
+          var rText  = responseText.target.response;
+          var rStart = rText.indexOf('<table border="0" cellpadding="0" cellspacing="0" width="100%">');
+          var rEnd   = rText.indexOf('<small style="color: #aaa;font-size: 0.6em;"');
+          var rLen   = rEnd - rStart - 1;
+          var nextPg = rText.substr(rStart, rLen);
+
+          var newDiv  = document.createElement('div');
+          newDiv.setAttribute('id', 'page' + currentPage);
+          newDiv.innerHTML = nextPg;
+
+          body.insertBefore(newDiv, disclaimer);
+          parentDiv = newDiv;
+
+          // var tables   = newDiv.getElementsByTagName('table');
+          // var pTable   = tables[0];
+          // var nextLink = pTable.getElementsByTagName('a')[0];
+          // nextLink.addEventListener('click', loadNext, true);
+        };
+        xhr.send();
+
+        this.parentDiv = parentDiv;
+      }else{
+        window.removeEventListener('scroll', onScroll, true);
+      }
+    }
+  };
+
+  return output;
+}
+
+function onScroll(){
+  var body = document.getElementsByTagName('body')[0];
+  if (body.scrollTop < body.scrollHeight - 800){
+    return;
+  }
+
+  Paginator.autoPage();
+}
+
+// function loadNext(e){
+//   e.preventDefault();
+//   Paginator.autoPage();
+//   var nextPage = document.getElementById('disclaimer');
+//   nextPage.scrollIntoView();  
+// }
+
+chrome.runtime.onMessage.addListener(handleRequests);
+
+var form = document.getElementsByName("f")[0];
+form.addEventListener('submit', fillQ, true);
+
+var Paginator = constructAutoPage();
+window.addEventListener('scroll', onScroll, true);
+onScroll();
