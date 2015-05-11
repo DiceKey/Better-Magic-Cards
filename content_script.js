@@ -46,7 +46,18 @@ function cNumeric(inStr){
       outStr = '(' + outStr + ')';
     }
     if (letStr != ''){
-      outStr = '(' + outStr + ' c:' + letStr + ')';
+      if (inStr[modIdx] == '!'){ 
+        outArr = [];
+        letStr.split('').every(function(ele, idx, arr){
+          if (colorArr.indexOf(ele) != -1){
+            outArr.push('c:' + ele);
+          }
+          return true;
+        });
+        outStr = '(' + outArr.join(' ') + ' ' + outStr + ')';
+      }else{
+        outStr = '(c:' + letStr + ' ' + outStr + ')';
+      }
     }
     return outStr;
   }else{

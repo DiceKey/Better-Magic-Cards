@@ -3,8 +3,7 @@ Extension for http://magiccards.info
 
 **c[:=!][wubrgmcl012345]+**  
 > Search for cards with a specific number of colors.  
-> *(c:3w returns 3-color white cards, c:23 returns cards with 2 or 3 colors, etc.)*  
-> *This ignores the bang (!), because there would be no point in searching for 'c!2wu', and even less in searching for 'c!3wu'.*
+> *(c:23 returns cards with 2 or 3 colors, c:3wu returns 3-color cards that are white and/or blue, c!3wu returns 3-color cards that are white and blue etc.)*
 
 **ci![wubrg]+**  
 > Search for cards with a strict color identity.  
