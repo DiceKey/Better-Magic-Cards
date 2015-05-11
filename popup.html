@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+ This page is shown when the extension button is clicked, because the
+ "browser_action" field in manifest.json contains the "default_popup" key with
+ value "popup.html".
+ -->
+<html>
+  <head>
+    <title>Getting Started Extension's Popup</title>
+    <style>
+      body {
+        font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+        font-size: 100%;
+      }
+      #help {
+        /* avoid an excessively wide status text */
+        white-space: normal;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        width: 500px;
+      }
+
+      .link {
+        font-weight: bold;
+        cursor: pointer;
+        color: blue;
+      }
+
+      .link:hover{
+        color: #000;
+      }
+
+    </style>
+
+    <!--
+      - JavaScript and HTML must be in separate files: see our Content Security
+      - Policy documentation[1] for details and explanation.
+      -
+      - [1]: https://developer.chrome.com/extensions/contentSecurityPolicy
+     -->
+    <script src="popup.js"></script>
+  </head>
+  <body>
+    <div id="help">
+      <span class='link' id='cNumeric'>c:[012345]+</span><br/>search for cards with a certain number of colors.<br/>
+      <span class='link' id='ciStrict'>ci![wubrg]+</span><br/>search for cards with an exact color identity.<br/>
+      <span class='link' id='cwLoose' >cw:[wubrg]+</span><br/>search for cards that are castable with specific colors.<br/>
+      <span class='link' id='cwStrict'>cw![wubrg]+</span><br/>search for cards that are castable with specific colors, but are still off-color (i.e. hybrid or color indicators).<br/>
+    </div>
+    <img id="image-result" hidden>
+  </body>
+</html>
+

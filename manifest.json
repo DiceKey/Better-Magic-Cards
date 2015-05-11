@@ -1,0 +1,32 @@
+{
+  "manifest_version": 2,
+
+  "name": "Better Magic Cards",
+  "description": "Extends the functionality of http://magiccards.info",
+  "version": "0.1",
+  "author": "Charles Wusands",
+
+  "page_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["http://www.magiccards.info/*"],
+      "js": ["bmc.js"],
+      "all_frames" : false,
+      "run_at" : "document_end"
+    }
+  ],
+
+  "permissions": [
+    "http://magiccards.info/",
+    "tabs"
+  ]
+}
