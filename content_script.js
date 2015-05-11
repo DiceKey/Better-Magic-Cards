@@ -1,6 +1,7 @@
-var cNumericReg = new RegExp('^\\(*c:[wubrgcml]*[012345]+[wubrgcml]*\\)*');
+var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
+var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
 var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
-var castWithReg = new RegExp('^\\(*cw[:!][wubrg]+\\)*');
+var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
 var colorArr    = ['w', 'u', 'b', 'r', 'g'];
 
 function cNumeric(inStr){
@@ -132,8 +133,7 @@ function combine(elemArr, size){
   }
 }
 
-function parseQuery(e){
-  var q = document.getElementById('q');
+function parseQuery(){
   var queryStr = q.value;
   var orArr = queryStr.split('or');
   orArr.every(function(ele1, idx1, arr1){
@@ -157,6 +157,13 @@ function parseQuery(e){
 
 var form = document.getElementsByName("f")[0];
 form.addEventListener('submit', parseQuery, true);
+
+var q = document.getElementById('q');
+var queryStr = q.value;
+if(queryStr.match(anyReg) != null){
+  parseQuery();
+  form.submit();
+}
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse){
