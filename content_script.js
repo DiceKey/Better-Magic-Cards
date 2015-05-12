@@ -1,4 +1,5 @@
 var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
+var getOrigReg  = new RegExp('(?:[\\?&]o=)(.+?)(?:$|&)');
 var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
 var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
 
@@ -93,7 +94,7 @@ function ciStrict(inStr){
 
       return outStr;
     }else{
-      return inStr + ' -ci:c';
+      return 'ci:' + inColors + ' -ci:c';
     }
   }
   return inStr;
@@ -183,30 +184,34 @@ function parseQuery(inStr){
 
 // Handle requests made by background/page_action scripts
 function handleRequests(request, sender, sendResponse){
-    switch (request.action){
-      case 'fillQ':
+  switch (request.action){
+    case 'fillQ':
+      if (q !== null){
         q.value = request.query;
         q.focus();
-        sendResponse({text: "success"});
-        break;
-      case 'checkGET':
-        var reqURL  = request.url;
-        var matches = reqURL.match(getQueryReg);
-        if (matches != null){
-          var queryGet = matches[1];
-          var queryStr = unescape(queryGet);
-          if (queryStr.match(anyReg) != null){
-            queryStr = parseQuery(queryStr);
-            queryStr = escape(queryStr);
-            reqURL   = reqURL.replace(queryGet, queryStr);
-            location.replace(reqURL);
-          }
+      }else{
+        location.replace('http://magiccards.info/?o=' + request.query);  
+      }
+      sendResponse({text: 'success'});
+      break;
+    case 'checkGET':
+      var reqURL  = request.url;
+      var matches = reqURL.match(getQueryReg);
+      if (matches != null){
+        var queryGet = matches[1];
+        var queryStr = unescape(queryGet);
+        if (queryStr.match(anyReg) != null){
+          queryStr = parseQuery(queryStr);
+          queryStr = escape(queryStr);
+          reqURL   = reqURL.replace(queryGet, queryStr);
+          location.replace(reqURL);
         }
-        break;
-      default:
-        sendResponse({text: "unrecognized action"});
-        break;
-    }
+      }
+      break;
+    default:
+      sendResponse({text: 'unrecognized action'});
+      break;
+  }
 }
 
 
@@ -280,7 +285,6 @@ function checkForNextPage(){
 
 
 function prepAutoPage(){
-  url  = window.location.href;
   totalCards = parseInt(document.getElementsByTagName('table')[2].rows[0].cells[2].innerHTML);
 
   // Identify page number
@@ -291,7 +295,7 @@ function prepAutoPage(){
   }else{
     getPageStr  = '&p=1';
     currentPage = 1;
-    url   += '&p=1';
+    url         += '&p=1';
   }
 
   // Identify the display mode, in order to determine how many cards are displayed on a single page
@@ -344,9 +348,20 @@ function prepAutoPage(){
 
 chrome.runtime.onMessage.addListener(handleRequests);
 
-var body = document.getElementsByTagName('body')[0];
-prepAutoPage();
 
-var form = document.getElementsByName("f")[0];
+
 var q = document.getElementById('q');
-form.addEventListener('submit', fillQ, true);
+if (q !== null){
+  var body = document.getElementsByTagName('body')[0];
+
+  var url  = window.location.href;
+  if (url.match(getQueryReg) !== null){
+    prepAutoPage();
+  }else if ((matches = url.match(getOrigReg)) !== null){
+    q.value = unescape(matches[1]);
+    q.focus();
+  }
+
+  var form = document.getElementsByName("f")[0];
+  form.addEventListener('submit', fillQ, true);
+}
