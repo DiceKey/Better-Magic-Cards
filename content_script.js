@@ -334,7 +334,7 @@ function prepAutoPage(){
   loadingDiv = document.createElement('div');
   loadingDiv.setAttribute('id', 'loadingDiv');
   loadingDiv.setAttribute('style', 'display:none; width:100%; height:25px; text-align:center;');
-  loadingDiv.innerHTML = "<img src='https://www.brown.edu/sites/default/themes/pawtuxet/img/loader-larger.gif' style='height:25px; width:25px;' />";
+  loadingDiv.innerHTML = "<img src='http://i.imgur.com/1760Kkd.gif' style='height:25px; width:25px;' />";
   body.insertBefore(loadingDiv, errorDiv);
 
   // Listen for scrolling, and check if the user is already at the bottom of the page
