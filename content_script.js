@@ -1,13 +1,15 @@
-var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
 var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
 var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
 var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
 
+var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
 var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
 var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
 var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
+
 var colorArr    = ['w', 'u', 'b', 'r', 'g'];
 
+// Numeric Colors
 function cNumeric(inStr){
   if (inStr.match(cNumericReg) != null){
     var outStr   = '';
@@ -68,6 +70,7 @@ function cNumeric(inStr){
   }
 }
 
+// Strict Color Identity
 function ciStrict(inStr){
   if (inStr.match(ciStrictReg) != null){
     var outStr   = '';
@@ -96,6 +99,7 @@ function ciStrict(inStr){
   return inStr;
 }
 
+// Cast With
 function castWith(inStr){
   if (inStr.match(castWithReg) != null){
     var outStr   = '';
@@ -127,6 +131,7 @@ function castWith(inStr){
   }
 }
 
+// Find all combinations of a certain size using selected colors
 function combine(elemArr, size){
   if (size == 1){
     return [elemArr];
@@ -148,12 +153,14 @@ function combine(elemArr, size){
   }
 }
 
+// Parse and fill the search box
 function fillQ(){
   q.value = parseQuery(q.value);
 }
 
-function parseQuery(queryStr){
-  var orArr = queryStr.split('or');
+// Parse and transform the input string
+function parseQuery(inStr){
+  var orArr = inStr.split('or');
   orArr.every(function(ele1, idx1, arr1){
     var spArr = ele1.split(' ');
     spArr.every(function(ele2, idx2, arr2){
@@ -170,29 +177,29 @@ function parseQuery(queryStr){
     arr1[idx1] = spArr.join(' ');
     return true;
   });
-  queryStr = orArr.join('or');
-  return queryStr;
+  outStr = orArr.join('or');
+  return outStr;
 }
 
+// Handle requests made by background/page_action scripts
 function handleRequests(request, sender, sendResponse){
     switch (request.action){
       case 'fillQ':
-        var q = document.getElementById('q');
         q.value = request.query;
         q.focus();
         sendResponse({text: "success"});
         break;
       case 'checkGET':
-        var url     = request.url;
-        var matches = url.match(getQueryReg);
+        var reqURL  = request.url;
+        var matches = reqURL.match(getQueryReg);
         if (matches != null){
           var queryGet = matches[1];
           var queryStr = unescape(queryGet);
           if (queryStr.match(anyReg) != null){
             queryStr = parseQuery(queryStr);
             queryStr = escape(queryStr);
-            url = url.replace(queryGet, queryStr);
-            location.replace(url);
+            reqURL   = reqURL.replace(queryGet, queryStr);
+            location.replace(reqURL);
           }
         }
         break;
@@ -203,15 +210,80 @@ function handleRequests(request, sender, sendResponse){
 }
 
 
-function constructAutoPage(){
-  var body = document.getElementsByTagName('body')[0];
-  var bodyHeight = body.scrollHeight;
+function loadNext(){
+  errorDiv.style.display = 'none';
+  console.log(window);
+  if (currentPage * cardsPerPage < totalCards){
+    // 'lock' the auto-pagination
+    window.removeEventListener('scroll', checkForNextPage, true);
 
-  var smallTexts = document.getElementsByTagName('small');
-  var disclaimer = smallTexts[smallTexts.length - 1];
-  disclaimer.setAttribute('id', 'disclaimer');
+    // Increment the GET string and URL, for making the AJAX request
+    // Only increment the page counter on success
+    var oldPageStr = getPageStr;
+    getPageStr = getPageStr.replace(currentPage, currentPage + 1);
+    url = url.replace(oldPageStr, getPageStr);
 
-  var url  = window.location.href;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function(responseText){
+      if (xhr.readyState == 4){
+        if (xhr.status == 200){
+          loadingDiv.style.display = 'none';
+
+          // Remove elements for the sake of styling
+          var tables = document.getElementsByTagName('table');
+          var lTable = tables[tables.length - 1];
+          lTable.parentNode.removeChild(lTable);
+          var hrs    = document.getElementsByTagName('hr');
+          var lhr    = hrs[hrs.length - 1];
+          lhr.parentNode.removeChild(lhr);
+
+          // Grab the useful parts of the response text
+          var rText  = responseText.target.response;
+          var rStart = rText.indexOf('<table border="0" cellpadding="0" cellspacing="0" width="100%">');
+          var rEnd   = rText.indexOf('<br>\n<small style="color: #aaa;font-size: 0.6em;"');
+          var rLen   = rEnd - rStart - 1;
+          var nextPg = rText.substr(rStart, rLen);
+
+          var newDiv  = document.createElement('div');
+          newDiv.setAttribute('id', 'page' + currentPage);
+          newDiv.innerHTML = nextPg;
+          body.insertBefore(newDiv, loadingDiv);
+
+          // Increment the currentPage, release the lock, and check if the user is already trying to load another page.
+          currentPage ++;
+          window.addEventListener('scroll', checkForNextPage, true);
+          checkForNextPage();
+        }else{
+          loadingDiv.style.display = 'none';
+          errorDiv.style.display = 'block';
+        }
+      }
+    };
+
+    xhr.send();
+    loadingDiv.style.display = 'block';
+
+  }else{
+    // After reaching the end of the results, remove the event listener.
+    window.removeEventListener('scroll', checkForNextPage, true);
+  }
+}
+
+function checkForNextPage(){
+  if (body.scrollTop < body.scrollHeight - 900){
+    return;
+  }else{
+    loadNext();
+  }
+}
+
+
+function prepAutoPage(){
+  url  = window.location.href;
+  totalCards = parseInt(document.getElementsByTagName('table')[2].rows[0].cells[2].innerHTML);
+
+  // Identify page number
   var matches = url.match(getPageReg);
   if (matches !== null){
     getPageStr  = matches[0];
@@ -222,8 +294,9 @@ function constructAutoPage(){
     url   += '&p=1';
   }
 
-  var cardsPerPage = 20;
-  var matches = url.match(getViewReg);
+  // Identify the display mode, in order to determine how many cards are displayed on a single page
+  cardsPerPage = 20;
+  matches = url.match(getViewReg);
   if (matches !== null){
     vStr = matches[1];
     switch(vStr){
@@ -242,98 +315,38 @@ function constructAutoPage(){
     }
   }
 
-  var tables = document.getElementsByTagName('table');
-  var pTable = tables[2];
-  //var nextLink   = pTable.getElementsByTagName('a')[0];
-  //nextLink.addEventListener('click', loadNext, true);
-  var totalCards = parseInt(pTable.rows[0].cells[2].innerHTML);
+  // Remove the second-to-last <br/> for styling reasons
+  var brs  = document.getElementsByTagName('br');
+  var slbr = brs[brs.length - 2];
+  slbr.parentNode.removeChild(slbr);
 
-  var output = {
-    url:          url,
-    currentPage:  currentPage,
-    getPageStr:   getPageStr,
-    cardsPerPage: cardsPerPage,
-    totalCards:   totalCards,
-    divHeight:    bodyHeight,
-    disclaimer:   disclaimer,
-    parentDiv:    body,
-    autoPage:     function(){
-      if (this.currentPage * this.cardsPerPage < this.totalCards){
-        oldPageStr = this.getPageStr;
-        this.getPageStr = this.getPageStr.replace(this.currentPage, this.currentPage + 1)
-        this.url = this.url.replace(oldPageStr, this.getPageStr);
-        this.currentPage ++;
+  // Identify the disclaimer text, so we know where to put new elements
+  var smallTexts = document.getElementsByTagName('small');
+  var disclaimer = smallTexts[smallTexts.length - 1];
 
-        var parentDiv   = this.parentDiv;
-        var currentPage = this.currentPage;
-        var disclaimer  = this.disclaimer;
-        // var getPageStr  = this.getPageStr;
+  errorDiv = document.createElement('div');
+  errorDiv.setAttribute('id', 'errorDiv');
+  errorDiv.setAttribute('style', 'display:none; width:100%; height:25px; text-align:center; cursor:pointer; color:blue;');
+  errorDiv.innerHTML = "Sorry, looks like something went wrong. Click me to try again!";
+  errorDiv.addEventListener('click', loadNext, true);
+  body.insertBefore(errorDiv, disclaimer);
 
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', this.url, true);
-        xhr.onload = function(responseText){
-          var tables = document.getElementsByTagName('table');
-          var lTable = tables[tables.length - 1];
-          var hrs    = document.getElementsByTagName('hr');
-          var lhr    = hrs[hrs.length - 1];
-          var brs    = document.getElementsByTagName('br');
-          var slbr   = brs[brs.length - 2];
+  loadingDiv = document.createElement('div');
+  loadingDiv.setAttribute('id', 'loadingDiv');
+  loadingDiv.setAttribute('style', 'display:none; width:100%; height:25px; text-align:center;');
+  loadingDiv.innerHTML = "<img src='https://www.brown.edu/sites/default/themes/pawtuxet/img/loader-larger.gif' style='height:25px; width:25px;' />";
+  body.insertBefore(loadingDiv, errorDiv);
 
-          lTable.parentNode.removeChild(lTable);
-          lhr.parentNode.removeChild(lhr);
-          slbr.parentNode.removeChild(slbr);
-
-          var rText  = responseText.target.response;
-          var rStart = rText.indexOf('<table border="0" cellpadding="0" cellspacing="0" width="100%">');
-          var rEnd   = rText.indexOf('<small style="color: #aaa;font-size: 0.6em;"');
-          var rLen   = rEnd - rStart - 1;
-          var nextPg = rText.substr(rStart, rLen);
-
-          var newDiv  = document.createElement('div');
-          newDiv.setAttribute('id', 'page' + currentPage);
-          newDiv.innerHTML = nextPg;
-
-          body.insertBefore(newDiv, disclaimer);
-          parentDiv = newDiv;
-
-          // var tables   = newDiv.getElementsByTagName('table');
-          // var pTable   = tables[0];
-          // var nextLink = pTable.getElementsByTagName('a')[0];
-          // nextLink.addEventListener('click', loadNext, true);
-        };
-        xhr.send();
-
-        this.parentDiv = parentDiv;
-      }else{
-        window.removeEventListener('scroll', onScroll, true);
-      }
-    }
-  };
-
-  return output;
+  // Listen for scrolling, and check if the user is already at the bottom of the page
+  window.addEventListener('scroll', checkForNextPage, true);
+  checkForNextPage();
 }
-
-function onScroll(){
-  var body = document.getElementsByTagName('body')[0];
-  if (body.scrollTop < body.scrollHeight - 800){
-    return;
-  }
-
-  Paginator.autoPage();
-}
-
-// function loadNext(e){
-//   e.preventDefault();
-//   Paginator.autoPage();
-//   var nextPage = document.getElementById('disclaimer');
-//   nextPage.scrollIntoView();  
-// }
 
 chrome.runtime.onMessage.addListener(handleRequests);
 
-var form = document.getElementsByName("f")[0];
-form.addEventListener('submit', fillQ, true);
+var body = document.getElementsByTagName('body')[0];
+prepAutoPage();
 
-var Paginator = constructAutoPage();
-window.addEventListener('scroll', onScroll, true);
-onScroll();
+var form = document.getElementsByName("f")[0];
+var q = document.getElementById('q');
+form.addEventListener('submit', fillQ, true);
