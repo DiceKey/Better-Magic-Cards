@@ -1,5 +1,5 @@
 var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
-var getOrigReg  = new RegExp('(?:[\\?&]o=)(.+?)(?:$|&)');
+//var getOrigReg  = new RegExp('(?:[\\?&]o=)(.+?)(?:$|&)');
 var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
 var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
 
@@ -155,8 +155,12 @@ function combine(elemArr, size){
 }
 
 // Parse and fill the search box
-function fillQ(){
-  q.value = parseQuery(q.value);
+function fillQ(e){
+  e.preventDefault();
+  chrome.storage.sync.set({'query': q.value}, function(){
+    q.value = parseQuery(q.value);
+    e.srcElement.submit();
+  });
 }
 
 // Parse and transform the input string
@@ -190,7 +194,9 @@ function handleRequests(request, sender, sendResponse){
         q.value = request.query;
         q.focus();
       }else{
-        location.replace('http://magiccards.info/?o=' + request.query);  
+        chrome.storage.sync.set({'query': request.query}, function(){
+          location.replace('http://magiccards.info/');  
+        });
       }
       sendResponse({text: 'success'});
       break;
@@ -204,7 +210,9 @@ function handleRequests(request, sender, sendResponse){
           queryStr = parseQuery(queryStr);
           queryStr = escape(queryStr);
           reqURL   = reqURL.replace(queryGet, queryStr);
-          location.replace(reqURL);
+          chrome.storage.sync.set({'query': queryGet}, function(){
+            location.replace(reqURL);
+          });
         }
       }
       break;
@@ -348,18 +356,20 @@ function prepAutoPage(){
 
 chrome.runtime.onMessage.addListener(handleRequests);
 
-
-
 var q = document.getElementById('q');
 if (q !== null){
+  chrome.storage.sync.get('query', function(value){
+    if (value.query !== null){
+      q.value = unescape(value.query);
+      q.focus();
+    }
+  });
+
   var body = document.getElementsByTagName('body')[0];
 
   var url  = window.location.href;
   if (url.match(getQueryReg) !== null){
     prepAutoPage();
-  }else if ((matches = url.match(getOrigReg)) !== null){
-    q.value = unescape(matches[1]);
-    q.focus();
   }
 
   var form = document.getElementsByName("f")[0];
