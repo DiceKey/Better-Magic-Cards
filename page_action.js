@@ -1,3 +1,12 @@
+function toggleNameText(e){
+	var toggleValue = this.checked
+  chrome.storage.sync.set({'nameAndText': toggleValue}, function(){
+  	chrome.tabs.getSelected(null, function(tab){
+  		chrome.tabs.sendMessage(tab.id, {action: 'toggleNameText', toggleValue: toggleValue});
+  	});
+  });
+}
+
 function fillq(e){
 	var query = this.id;
 
@@ -15,6 +24,15 @@ function toggleDiv(e){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+	var nameTextOn = document.getElementById('nameAndText');
+	chrome.storage.sync.get('nameAndText', function(response){
+		if (response !== null){
+			console.log(response.nameAndText);
+			nameTextOn.checked = response.nameAndText;
+		}
+	});
+	nameTextOn.addEventListener('change', toggleNameText, true);
+
 	var categories = document.getElementsByClassName('category');
 	var len = categories.length;
 	for (var i = 0; i < len; i++){

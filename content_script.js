@@ -10,6 +10,8 @@ var equalityReg = new RegExp('[:=!><]');
 
 var colorArr    = ['w', 'u', 'b', 'r', 'g'];
 
+var nameTextOn  = false;
+
 // Numeric Colors
 function cNumeric(inStr){
   var outStr   = '';
@@ -216,7 +218,7 @@ function parseChunk(inStr){
     inStr = ciStrict(inStr);
   }else if (inStr.match(castWithReg) != null){
     inStr = castWith(inStr);
-  }else if (inStr.match(equalityReg) == null){
+  }else if (nameTextOn && inStr.match(equalityReg) == null){
     inStr = plainText(inStr);
   }
   return inStr;
@@ -251,6 +253,9 @@ function handleRequests(request, sender, sendResponse){
           });
         }
       }
+      break;
+    case 'toggleNameText':
+      nameTextOn = request.toggleValue;
       break;
     default:
       sendResponse({text: 'unrecognized action'});
@@ -392,6 +397,9 @@ function prepAutoPage(){
   checkForNextPage();
 }
 
+
+
+// Main
 chrome.runtime.onMessage.addListener(handleRequests);
 
 var q = document.getElementById('q');
@@ -400,19 +408,19 @@ if (q !== null){
   // and it corresponds to the searchbox contents
   // then load in the stored query
   if (q.value == ''){
-    chrome.storage.sync.get('exampleQuery', function(exampleQuery){
-      if (exampleQuery !== null){
+    chrome.storage.sync.get('exampleQuery', function(response){
+      if (response !== null && response.exampleQuery != ''){
         chrome.storage.sync.set({'exampleQuery': ''}, function(){
-          q.value = unescape(exampleQuery.exampleQuery);
+          q.value = unescape(response.exampleQuery);
           q.focus();
         });
       }
     });
   }else{
-    chrome.storage.sync.get('storedQuery', function(storedQuery){
-      if (storedQuery.storedQuery !== null){
-        oldStoredQuery = unescape(storedQuery.storedQuery[0]).replace('+',' ');
-        newStoredQuery = unescape(storedQuery.storedQuery[1]).replace('+',' ');
+    chrome.storage.sync.get('storedQuery', function(response){
+      if (response !== null){
+        oldStoredQuery = unescape(response.storedQuery[0]).replace('+',' ');
+        newStoredQuery = unescape(response.storedQuery[1]).replace('+',' ');
         if (q.value == newStoredQuery){
           q.value = oldStoredQuery;
           document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
