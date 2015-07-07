@@ -1,5 +1,4 @@
 var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
-//var getOrigReg  = new RegExp('(?:[\\?&]o=)(.+?)(?:$|&)');
 var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
 var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
 
@@ -157,32 +156,38 @@ function combine(elemArr, size){
 // Parse and fill the search box
 function fillQ(e){
   e.preventDefault();
-  chrome.storage.sync.set({'query': q.value}, function(){
-    q.value = parseQuery(q.value);
+  var oldQuery = q.value;
+  var newQuery = parseQuery(oldQuery);
+  chrome.storage.sync.set({'storedQuery': [oldQuery, newQuery]}, function(){
+    q.value = newQuery;
     e.srcElement.submit();
   });
 }
 
 // Parse and transform the input string
 function parseQuery(inStr){
-  var orArr = inStr.split('or');
-  orArr.every(function(ele1, idx1, arr1){
-    var spArr = ele1.split(' ');
-    spArr.every(function(ele2, idx2, arr2){
-      if (ele2 != '' && ele2 != '(' && ele2 != ')'){
-        ele2 = cNumeric(ele2);
-        ele2 = ciStrict(ele2);
-        ele2 = castWith(ele2);
-        arr2[idx2] = ele2;
-      }
-
+  var minusArr = inStr.split('-');
+  minusArr.every(function(ele0, idx0, arr0){
+    var orArr = ele0.split('or');
+    orArr.every(function(ele1, idx1, arr1){
+      var spaceArr = ele1.split(' ');
+      spaceArr.every(function(ele2, idx2, arr2){
+        if (ele2 != '' && ele2 != '(' && ele2 != ')'){
+          ele2 = cNumeric(ele2);
+          ele2 = ciStrict(ele2);
+          ele2 = castWith(ele2);
+          arr2[idx2] = ele2;
+        }
+        return true;
+      });
+      arr1[idx1] = spaceArr.join(' ');
       return true;
     });
-
-    arr1[idx1] = spArr.join(' ');
+    arr0[idx0] = orArr.join('or');
     return true;
   });
-  outStr = orArr.join('or');
+
+  outStr = minusArr.join('-');
   return outStr;
 }
 
@@ -194,7 +199,7 @@ function handleRequests(request, sender, sendResponse){
         q.value = request.query;
         q.focus();
       }else{
-        chrome.storage.sync.set({'query': request.query}, function(){
+        chrome.storage.sync.set({'exampleQuery': request.query}, function(){
           location.replace('http://magiccards.info/');  
         });
       }
@@ -204,13 +209,13 @@ function handleRequests(request, sender, sendResponse){
       var reqURL  = request.url;
       var matches = reqURL.match(getQueryReg);
       if (matches != null){
-        var queryGet = matches[1];
-        var queryStr = unescape(queryGet);
-        if (queryStr.match(anyReg) != null){
-          queryStr = parseQuery(queryStr);
-          queryStr = escape(queryStr);
-          reqURL   = reqURL.replace(queryGet, queryStr);
-          chrome.storage.sync.set({'query': queryGet}, function(){
+        var oldQuery = matches[1];
+        var newQuery = unescape(oldQuery);
+        if (newQuery.match(anyReg) != null){
+          newQuery = parseQuery(newQuery);
+          newQuery = escape(newQuery);
+          reqURL   = reqURL.replace(oldQuery, newQuery);
+          chrome.storage.sync.set({'storedQuery': [oldQuery, newQuery]}, function(){
             location.replace(reqURL);
           });
         }
@@ -358,12 +363,31 @@ chrome.runtime.onMessage.addListener(handleRequests);
 
 var q = document.getElementById('q');
 if (q !== null){
-  chrome.storage.sync.get('query', function(value){
-    if (value.query !== null){
-      q.value = unescape(value.query);
-      q.focus();
-    }
-  });
+  // if there is a stored query,
+  // and it corresponds to the searchbox contents
+  // then load in the stored query
+  if (q.value == ''){
+    chrome.storage.sync.get('exampleQuery', function(exampleQuery){
+      if (exampleQuery !== null){
+        chrome.storage.sync.set({'exampleQuery': ''}, function(){
+          q.value = unescape(exampleQuery.exampleQuery);
+          q.focus();
+        });
+      }
+    });
+  }else{
+    chrome.storage.sync.get('storedQuery', function(storedQuery){
+      if (storedQuery.storedQuery !== null){
+        oldStoredQuery = unescape(storedQuery.storedQuery[0]);
+        newStoredQuery = unescape(storedQuery.storedQuery[1]);
+        if (q.value == newStoredQuery){
+          q.value = oldStoredQuery;
+          document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
+          q.focus();
+        }
+      }
+    });
+  }
 
   var body = document.getElementsByTagName('body')[0];
 

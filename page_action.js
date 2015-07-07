@@ -1,21 +1,5 @@
 function fillq(e){
-	var query = '';
-	switch(this.id){
-		case 'cNumeric':
-			query = 'c:3wu';
-			break;
-		case 'ciStrict':
-			query = 'ci!wu';
-			break;
-		case 'cwLoose' :
-			query = 'cw:gw';
-			break;
-		case 'cwStrict':
-			query = 'cw!g';
-			break;
-		default:
-			break;
-	};
+	var query = this.id;
 
 	chrome.tabs.getSelected(null, function(tab){
 		chrome.tabs.sendMessage(tab.id, {action: 'fillQ', query: query}, {}, function(response){
@@ -26,10 +10,20 @@ function fillq(e){
 	});
 }
 
+function toggleDiv(e){
+	document.getElementsByClassName(this.id)[0].classList.toggle('hidden');
+}
+
 document.addEventListener('DOMContentLoaded', function(){
-	var links = document.getElementsByClassName('link');
-	var len = links.length;
+	var categories = document.getElementsByClassName('category');
+	var len = categories.length;
 	for (var i = 0; i < len; i++){
-		links[i].addEventListener('click', fillq, true);
+		categories[i].addEventListener('click', toggleDiv, true);
+	}
+
+	var examples = document.getElementsByClassName('example');
+	var len = examples.length;
+	for (var i = 0; i < len; i++){
+		examples[i].addEventListener('click', fillq, true);
 	}
 });

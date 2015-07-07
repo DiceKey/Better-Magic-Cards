@@ -8,16 +8,24 @@
         font-size: 100%;
       }
 
+      ul{
+        margin: 0 0 10px 0;
+      }
+
       #container{
         width: 500px;
       }
 
-      .link {
+      .hidden{
+        display: none;
+      }
+
+      .example, .category{
         font-weight: bold;
         cursor: pointer;
         color: #4666BC;
       }
-      .link:hover{
+      .example:hover, .category:hover{
         color: #283C71;
       }
     </style>
@@ -25,12 +33,31 @@
   </head>
   <body>
     <div id="container">
-      <span class='link' id='cNumeric'>c:[012345]+</span><br/>search for cards with a certain number of colors.<br/>
-      <span class='link' id='ciStrict'>ci![wubrg]+</span><br/>search for cards with an exact color identity.<br/>
-      <span class='link' id='cwLoose' >cw:[wubrg]+</span><br/>search for cards that are castable with specific colors.<br/>
-      <span class='link' id='cwStrict'>cw![wubrg]+</span><br/>search for cards that are castable with specific colors, but are still off-color (i.e. hybrid or color indicators).<br/>
-      <br/>
+      <span class='category' id='cNumeric'>c:[012345]+</span><br/>Search for cards with a certain number of colors.<br/>
+      <div class='cNumeric hidden'>
+        <ul>
+          <li><span class='example' id='c:23rg'>c:23rg</span><br/>Search for 2- or 3-color cards that are Red and/or Green.</li>
+          <li><span class='example' id='c!3rg'>c!3rg</span><br/>Search for 3-color cards that are both Red and Green.</li>
+        </ul>
+      </div>
+      <span class='category' id='ciStrict'>ci![wubrg]+</span><br/>Search for cards with an exact color identity.<br/>
+      <div class='ciStrict hidden'>
+        <ul>
+          <li><span class='example' id='ci!rg'>ci!rg</span><br/>Search for cards whose color identity is exactly Red and Green.</li>
+          <li><span class='example' id='ci!rg -c:m'>ci!rg -c:m</span><br/>Search only for colorless/mono-color cards with Red or Green mana symbols in their textboxes.</li>
+        </ul>
+      </div>
+      <span class='category' id='castWith'>cw[:!][wubrg]+</span><br/>Search for cards that are castable with specific colors.<br/>
+      <div class='castWith hidden'>
+        <ul>
+          <li><span class='example' id='cw:rg'>cw:rg</span><br/>Search for Red/Green cards that are castable using just Red and Green mana.</li>
+          <li><span class='example' id='cw!r'>cw!r</span><br/>Search for non-mono-Red cards that are castable using just Red mana.</li>
+        </ul>
+      </div>
+      <br />
       <a href='https://github.com/notATrueEnd/Better-Magic-Cards' target='_blank'>Visit the Github Repo</a>
+      <br />
+      Send your complaints to <strong>thisisnotatrueend@gmail.com</strong>
     </div>
   </body>
 </html>
