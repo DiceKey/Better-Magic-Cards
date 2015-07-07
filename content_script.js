@@ -6,68 +6,65 @@ var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci
 var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
 var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
 var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
+var equalityReg = new RegExp('[:=!><]');
 
 var colorArr    = ['w', 'u', 'b', 'r', 'g'];
 
 // Numeric Colors
 function cNumeric(inStr){
-  if (inStr.match(cNumericReg) != null){
-    var outStr   = '';
-    var modIdx   = inStr.indexOf('c') + 1;
-    var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
-    var len      = parIdx - modIdx - 1;
-    var inValues = inStr.substr(modIdx + 1, len);
+  var outStr   = '';
+  var modIdx   = inStr.indexOf('c') + 1;
+  var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
+  var len      = parIdx - modIdx - 1;
+  var inValues = inStr.substr(modIdx + 1, len);
 
-    var letStr = '';
-    var numArr = [];
-    inValues.split('').every(function(ele1, idx1, arr1){
-      switch (ele1){
-        case '0':
-          numArr.push('c:cl');
-          break;
-        case '1':
-          numArr.push('(-c:m -c:cl)');
-          break;
-        case '2':
-          numArr.push('(c!wum or c!wbm or c!wrm or c!wgm or c!ubm or c!urm or c!ugm or c!brm or c!bgm or c!rgm)');
-          break;
-        case '3':
-          numArr.push('(c!wubm or c!wurm or c!wugm or c!wbrm or c!wbgm or c!wrgm or c!ubrm or c!ubgm or c!urgm or c!brgm)');
-          break;
-        case '4':
-          numArr.push('(c!wubrm or c!ubrgm or c!brgwm or c!rgwum or c!gwubm)');
-          break;
-        case '5':
-          numArr.push('(c!wubrgm)');
-          break;
-        default:
-          letStr += ele1;
-          break;
-      }
-      return true;
-    });
-    outStr = numArr.join(' or ');
-    if (numArr.length > 1){
-      outStr = '(' + outStr + ')';
+  var letStr = '';
+  var numArr = [];
+  inValues.split('').every(function(ele1, idx1, arr1){
+    switch (ele1){
+      case '0':
+        numArr.push('c:cl');
+        break;
+      case '1':
+        numArr.push('(-c:m -c:cl)');
+        break;
+      case '2':
+        numArr.push('(c!wum or c!wbm or c!wrm or c!wgm or c!ubm or c!urm or c!ugm or c!brm or c!bgm or c!rgm)');
+        break;
+      case '3':
+        numArr.push('(c!wubm or c!wurm or c!wugm or c!wbrm or c!wbgm or c!wrgm or c!ubrm or c!ubgm or c!urgm or c!brgm)');
+        break;
+      case '4':
+        numArr.push('(c!wubrm or c!ubrgm or c!brgwm or c!rgwum or c!gwubm)');
+        break;
+      case '5':
+        numArr.push('(c!wubrgm)');
+        break;
+      default:
+        letStr += ele1;
+        break;
     }
-    if (letStr != ''){
-      if (inStr[modIdx] == '!'){ 
-        outArr = [];
-        letStr.split('').every(function(ele, idx, arr){
-          if (colorArr.indexOf(ele) != -1){
-            outArr.push('c:' + ele);
-          }
-          return true;
-        });
-        outStr = '(' + outArr.join(' ') + ' ' + outStr + ')';
-      }else{
-        outStr = '(c:' + letStr + ' ' + outStr + ')';
-      }
-    }
-    return outStr;
-  }else{
-    return inStr;
+    return true;
+  });
+  outStr = numArr.join(' or ');
+  if (numArr.length > 1){
+    outStr = '(' + outStr + ')';
   }
+  if (letStr != ''){
+    if (inStr[modIdx] == '!'){ 
+      outArr = [];
+      letStr.split('').every(function(ele, idx, arr){
+        if (colorArr.indexOf(ele) != -1){
+          outArr.push('c:' + ele);
+        }
+        return true;
+      });
+      outStr = '(' + outArr.join(' ') + ' ' + outStr + ')';
+    }else{
+      outStr = '(c:' + letStr + ' ' + outStr + ')';
+    }
+  }
+  return outStr;
 }
 
 // Strict Color Identity
@@ -103,40 +100,49 @@ function ciStrict(inStr){
 
 // Cast With
 function castWith(inStr){
-  if (inStr.match(castWithReg) != null){
-    var outStr   = '';
-    var modIdx   = inStr.indexOf('cw') + 2;
-    var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
-    var len      = parIdx - modIdx - 1;
-    var inColors = inStr.substr(modIdx + 1, len);
+  var outStr   = '';
+  var modIdx   = inStr.indexOf('cw') + 2;
+  var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
+  var len      = parIdx - modIdx - 1;
+  var inColors = inStr.substr(modIdx + 1, len);
 
-    if (inColors.length == 1){
-      outStr = 'c:' + inColors + ' -mana:w -mana:u -mana:b -mana:g -mana:r cmc>0';
-    }else{
-      var outArr = [];
-      var incArr = [];
-      colorArr.every(function(ele, idx, arr){
-        if (inColors.indexOf(ele) != -1){
-          incArr.push('c:' + ele);
-          outArr.push('(-mana:' + ele + ' or c:' + inColors.replace(ele, '') + ')');
-        }else{
-          outArr.push('-mana:' + ele);
-        }
-        return true;
-      });
+  if (inColors.length == 1){
+    outStr = 'cmc>0 c:' + inColors;
+    colorArr.every(function(ele, idx, arr){
+      if (ele == inColors){
+        outStr += ' (c!' + ele + ' or -mana:' + ele + ')';
+      }else{
+        outStr += ' -mana:' + ele;
+      }
+    });
 
-      outStr = '(' + incArr.join(' or ');
-      outStr += ' (' + outArr.join(' ') + ') cmc>0 -c:cl)';
-
-    }
-
-    if (inStr[modIdx] == '!'){
-      outStr += ' -c!' + inColors;
-    }
-    return outStr;
+    console.log(outStr)
   }else{
-    return inStr;
+    var outArr = [];
+    var incArr = [];
+    colorArr.every(function(ele, idx, arr){
+      if (inColors.indexOf(ele) != -1){
+        incArr.push('c:' + ele);
+        outArr.push('(-mana:' + ele + ' or c:' + inColors.replace(ele, '') + ')');
+      }else{
+        outArr.push('-mana:' + ele);
+      }
+      return true;
+    });
+
+    outStr = '(' + incArr.join(' or ');
+    outStr += ' (' + outArr.join(' ') + ') cmc>0 -c:cl)';
+
   }
+
+  if (inStr[modIdx] == '!'){
+    outStr += ' -c!' + inColors;
+  }
+  return outStr;
+}
+
+function plainText(inStr){
+  return '(' + inStr + ' or o:' + inStr +')';
 }
 
 // Find all combinations of a certain size using selected colors
@@ -174,29 +180,46 @@ function fillQ(e){
 
 // Parse and transform the input string
 function parseQuery(inStr){
-  var minusArr = inStr.split('-');
-  minusArr.every(function(ele0, idx0, arr0){
-    var orArr = ele0.split('or');
-    orArr.every(function(ele1, idx1, arr1){
-      var spaceArr = ele1.split(' ');
-      spaceArr.every(function(ele2, idx2, arr2){
-        if (ele2 != '' && ele2 != '(' && ele2 != ')'){
-          ele2 = cNumeric(ele2);
-          ele2 = ciStrict(ele2);
-          ele2 = castWith(ele2);
-          arr2[idx2] = ele2;
-        }
-        return true;
-      });
-      arr1[idx1] = spaceArr.join(' ');
-      return true;
-    });
-    arr0[idx0] = orArr.join('or');
-    return true;
-  });
+  var outStr   = '';
+  var curStr   = '';
+  var isQuoted = false;
+  var inStrLen = inStr.length;
 
-  outStr = minusArr.join('-');
+  for (var i = 0; i < inStrLen; i++){
+    if (inStr[i] == '(' || inStr[i] == ')' || inStr[i] == '-' || (inStr[i] == ' ' && isQuoted == false)){
+      if (curStr != ''){
+        outStr += parseChunk(curStr);
+        curStr = '';
+      }
+      outStr += inStr[i];
+    }else if (inStr[i] != ' '){
+      curStr += inStr[i];
+
+      if (inStr[i] == '"'){
+        isQuoted = !isQuoted;
+      }
+    }
+  }
+  if (curStr != ''){
+    outStr += parseChunk(curStr);
+  }
+
   return outStr;
+}
+
+function parseChunk(inStr){
+  if (inStr == 'or' || inStr == 'and'){
+    return inStr;
+  }else if (inStr.match(cNumericReg) != null){
+    inStr = cNumeric(inStr);
+  }else if (inStr.match(ciStrictReg) != null){
+    inStr = ciStrict(inStr);
+  }else if (inStr.match(castWithReg) != null){
+    inStr = castWith(inStr);
+  }else if (inStr.match(equalityReg) == null){
+    inStr = plainText(inStr);
+  }
+  return inStr;
 }
 
 // Handle requests made by background/page_action scripts
@@ -238,7 +261,6 @@ function handleRequests(request, sender, sendResponse){
 
 function loadNext(){
   errorDiv.style.display = 'none';
-  console.log(window);
   if (currentPage * cardsPerPage < totalCards){
     // 'lock' the auto-pagination
     window.removeEventListener('scroll', checkForNextPage, true);
@@ -305,7 +327,11 @@ function checkForNextPage(){
 }
 
 function prepAutoPage(){
-  totalCards = parseInt(document.getElementsByTagName('table')[2].rows[0].cells[2].innerHTML);
+  try{
+    totalCards = parseInt(document.getElementsByTagName('table')[2].rows[0].cells[2].innerHTML);
+  }catch (err){
+    return;
+  }
 
   // Identify page number
   var matches = url.match(getPageReg);
@@ -387,7 +413,6 @@ if (q !== null){
       if (storedQuery.storedQuery !== null){
         oldStoredQuery = unescape(storedQuery.storedQuery[0]).replace('+',' ');
         newStoredQuery = unescape(storedQuery.storedQuery[1]).replace('+',' ');
-        console.log(storedQuery);
         if (q.value == newStoredQuery){
           q.value = oldStoredQuery;
           document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
