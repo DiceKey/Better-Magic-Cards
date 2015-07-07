@@ -92,8 +92,10 @@ function ciStrict(inStr){
       outStr = '(' + outArr.join(' ') + ')';
 
       return outStr;
-    }else{
+    }else if (inColors != 'c'){
       return 'ci:' + inColors + ' -ci:c';
+    }else{
+      return 'ci:c';
     }
   }
   return inStr;
@@ -296,7 +298,6 @@ function checkForNextPage(){
   }
 }
 
-
 function prepAutoPage(){
   totalCards = parseInt(document.getElementsByTagName('table')[2].rows[0].cells[2].innerHTML);
 
@@ -378,8 +379,8 @@ if (q !== null){
   }else{
     chrome.storage.sync.get('storedQuery', function(storedQuery){
       if (storedQuery.storedQuery !== null){
-        oldStoredQuery = unescape(storedQuery.storedQuery[0]);
-        newStoredQuery = unescape(storedQuery.storedQuery[1]);
+        oldStoredQuery = unescape(storedQuery.storedQuery[0]).replace('+',' ');
+        newStoredQuery = unescape(storedQuery.storedQuery[1]).replace('+',' ');
         if (q.value == newStoredQuery){
           q.value = oldStoredQuery;
           document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
