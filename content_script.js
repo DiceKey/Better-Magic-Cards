@@ -110,26 +110,29 @@ function castWith(inStr){
     var len      = parIdx - modIdx - 1;
     var inColors = inStr.substr(modIdx + 1, len);
 
-    var outArr = [];
-    var incArr = [];
-    colorArr.every(function(ele, idx, arr){
-      if (inColors.indexOf(ele) != -1){
-        incArr.push('c:' + ele);
-      }else{
-        outArr.push('-mana:' + ele);
-      }
-      return true;
-    });
+    if (inColors.length == 1){
+      outStr = 'c:' + inColors + ' -mana:w -mana:u -mana:b -mana:g -mana:r cmc>0';
+    }else{
+      var outArr = [];
+      var incArr = [];
+      colorArr.every(function(ele, idx, arr){
+        if (inColors.indexOf(ele) != -1){
+          incArr.push('c:' + ele);
+          outArr.push('(-mana:' + ele + ' or c:' + inColors.replace(ele, '') + ')');
+        }else{
+          outArr.push('-mana:' + ele);
+        }
+        return true;
+      });
 
-    outStr = '(' + incArr.join(' or ');
+      outStr = '(' + incArr.join(' or ');
+      outStr += ' (' + outArr.join(' ') + ') cmc>0 -c:cl)';
+
+    }
+
     if (inStr[modIdx] == '!'){
       outStr += ' -c!' + inColors;
     }
-    if (outArr.length > 0){
-      outStr += ' (' + outArr.join(' ') + ')';
-    }
-    outStr += ' cmc>0)';
-
     return outStr;
   }else{
     return inStr;
@@ -384,6 +387,7 @@ if (q !== null){
       if (storedQuery.storedQuery !== null){
         oldStoredQuery = unescape(storedQuery.storedQuery[0]).replace('+',' ');
         newStoredQuery = unescape(storedQuery.storedQuery[1]).replace('+',' ');
+        console.log(storedQuery);
         if (q.value == newStoredQuery){
           q.value = oldStoredQuery;
           document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
