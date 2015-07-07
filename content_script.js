@@ -116,7 +116,7 @@ function castWith(inStr){
       if (inColors.indexOf(ele) != -1){
         incArr.push('c:' + ele);
       }else{
-        outArr.push('-mana>=' + ele);
+        outArr.push('-mana:' + ele);
       }
       return true;
     });
@@ -125,7 +125,10 @@ function castWith(inStr){
     if (inStr[modIdx] == '!'){
       outStr += ' -c!' + inColors;
     }
-    outStr += ' (' + outArr.join(' ') + '))';
+    if (outArr.length > 0){
+      outStr += ' (' + outArr.join(' ') + ')';
+    }
+    outStr += ' cmc>0)';
 
     return outStr;
   }else{
