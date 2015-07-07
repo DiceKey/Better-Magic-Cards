@@ -116,9 +116,8 @@ function castWith(inStr){
       }else{
         outStr += ' -mana:' + ele;
       }
+      return true;
     });
-
-    console.log(outStr)
   }else{
     var outArr = [];
     var incArr = [];
