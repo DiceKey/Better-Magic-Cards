@@ -19,8 +19,3 @@ Extension for http://magiccards.info
 **cw![wubrg]+**  
 > Search for cards that are castable with just the selected colors, but contain off-colors (i.e. hybrid or color indicators).  
 > *(cw!wu returns Bant Sureblade, but not Abbey Gargoyles)*
-
-
-To-do:
-	Add ability to switch between original/parsed query-view
-	Add advanced page options
