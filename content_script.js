@@ -189,11 +189,16 @@ function parseQuery(inStr){
   for (var i = 0; i < inStrLen; i++){
     if (inStr[i] == '(' || inStr[i] == ')' || inStr[i] == '-' || (inStr[i] == ' ' && isQuoted == false)){
       if (curStr != ''){
-        outStr += parseChunk(curStr);
-        curStr = '';
+        if (curStr != 'or' && curStr != 'and' && inStr.indexOf(curStr, i + 1) == -1){
+          outStr += parseChunk(curStr);
+          curStr = '';
+        }else{
+          outStr += curStr;
+          curStr = '';
+        }
       }
       outStr += inStr[i];
-    }else if (inStr[i] != ' '){
+    }else{
       curStr += inStr[i];
 
       if (inStr[i] == '"'){
@@ -201,17 +206,20 @@ function parseQuery(inStr){
       }
     }
   }
+  
   if (curStr != ''){
-    outStr += parseChunk(curStr);
+    if (curStr == 'or' || curStr == 'and'){
+      outStr += curStr;
+    }else{
+      outStr += parseChunk(curStr);
+    }
   }
 
   return outStr;
 }
 
 function parseChunk(inStr){
-  if (inStr == 'or' || inStr == 'and'){
-    return inStr;
-  }else if (inStr.match(cNumericReg) != null){
+  if (inStr.match(cNumericReg) != null){
     inStr = cNumeric(inStr);
   }else if (inStr.match(ciStrictReg) != null){
     inStr = ciStrict(inStr);
@@ -238,19 +246,26 @@ function handleRequests(request, sender, sendResponse){
       sendResponse({text: 'success'});
       break;
     case 'checkGET':
-      var reqURL  = request.url;
+      var reqURL   = request.url;
+      var qElement = document.getElementById('q');
       var matches = reqURL.match(getQueryReg);
       if (matches != null){
-        var oldQuery = matches[1];
-        var newQuery = unescape(oldQuery);
-        if (newQuery.match(anyReg) != null){
-          newQuery = parseQuery(newQuery);
-          newQuery = escape(newQuery);
-          reqURL   = reqURL.replace(oldQuery, newQuery);
-          chrome.storage.sync.set({'storedQuery': [oldQuery, newQuery]}, function(){
-            location.replace(reqURL);
-          });
-        }
+        var oldGET   = matches[1];
+        var oldQuery = qElement.value;
+
+        chrome.storage.sync.get('storedQuery', function(response){
+          if (response !== null){
+            if (oldQuery != response.storedQuery[1]){
+              var newQuery = parseQuery(oldQuery);
+              if (oldQuery !== newQuery){
+                var newGET = escape(newQuery);
+                chrome.storage.sync.set({'storedQuery': [oldQuery, newQuery]}, function(){
+                  location.replace(reqURL.replace(oldGET, newGET));
+                });
+              }
+            }
+          }
+        });
       }
       break;
     case 'toggleNameText':
