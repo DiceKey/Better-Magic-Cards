@@ -79,12 +79,9 @@ function ciStrict(inStr){
     var inColors = inStr.substr(modIdx + 1, len);
     if (len > 1){
       outArr  = ['ci:' + inColors];
-      var combArr = combine(inColors.split(''), len - 1);
-      combArr.every(function(ele1, idx1, arr1){
-        ele1.every(function(ele2, idx2, arr2){
-          outArr.push('-ci:' + ele2);
-          return true;
-        });
+      var combArr = combine(inColors);
+      combArr.every(function(ele, idx, arr){
+        outArr.push('-ci:' + ele);
         return true;
       });
       
@@ -147,25 +144,13 @@ function plainText(inStr){
 }
 
 // Find all combinations of a certain size using selected colors
-function combine(elemArr, size){
-  if (size == 1){
-    return [elemArr];
-  }else{
-    var combArr  = combine(elemArr, size - 1);
-    var lastComb = combArr[0];
-    var currComb = [];
-    lastComb.every(function(ele1, idx1, arr1){
-      elemArr.every(function(ele2, idx2, arr2){
-        if (ele1.indexOf(ele2) == -1){
-          currComb.push(ele1 + ele2);
-        }
-        return true;
-      });
-      return true;
-    });
-    combArr.push(currComb);
-    return combArr;
+function combine(elems){
+  var combArr = [];
+  for (var i = 0; i < elems.length; i++){
+    var combination = elems.replace(elems[i], '');
+    combArr.push(combination);
   }
+  return combArr;
 }
 
 // Parse and fill the search box
