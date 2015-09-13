@@ -78,14 +78,13 @@ function ciStrict(inStr){
     var len      = parIdx - modIdx - 1;
     var inColors = inStr.substr(modIdx + 1, len);
     if (len > 1){
-      outArr  = ['ci:' + inColors];
+      outStr = '(ci:' + inColors;
       var combArr = combine(inColors);
       combArr.every(function(ele, idx, arr){
-        outArr.push('-ci:' + ele);
+        outStr += ' -ci:' + ele;
         return true;
       });
-      
-      outStr = '(' + outArr.join(' ') + ')';
+      outStr += ')';
 
       return outStr;
     }else if (inColors != 'c'){
@@ -150,6 +149,7 @@ function combine(elems){
     var combination = elems.replace(elems[i], '');
     combArr.push(combination);
   }
+  
   return combArr;
 }
 
