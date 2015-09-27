@@ -323,7 +323,7 @@ function loadNext(){
 }
 
 function checkForNextPage(){
-  if (body.scrollTop < body.scrollHeight - 900){
+  if (body.scrollTop < document.documentElement.scrollHeight - (document.documentElement.clientHeight * 1.2)){
     return;
   }else{
     loadNext();
