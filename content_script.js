@@ -1,46 +1,54 @@
-var getQueryReg = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
-var getPageReg  = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
-var getViewReg  = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
+var getQueryReg  = new RegExp('(?:[\\?&]q=)(.+?)(?:$|&)');
+var getPageReg   = new RegExp('(?:[\\?&]p=)(\\d+)(?:$|&)');
+var getViewReg   = new RegExp('(?:[\\?&]v=)([\\w]+)(?:$|&)');
 
-var anyReg      = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
-var cNumericReg = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
-var ciStrictReg = new RegExp('^\\(*ci![wubrgc]+\\)*');
-var castWithReg = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
-var equalityReg = new RegExp('[:=!><]');
+var anyReg       = new RegExp('(^| |\\()(c[:=!][wubrgcml]*[012345]+[wubrgcml]*|ci![wubrgc]+|cw[:=!][wubrg]+)');
+var cNumericReg  = new RegExp('^\\(*c[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
+var ciNumericReg = new RegExp('^\\(*ci[:=!][wubrgcml]*[012345]+[wubrgcml]*\\)*');
+var ciStrictReg  = new RegExp('^\\(*ci![wubrgc]+\\)*');
+var castWithReg  = new RegExp('^\\(*cw[:=!][wubrg]+\\)*');
+var equalityReg  = new RegExp('[:=!><]');
 
-var colorArr    = ['w', 'u', 'b', 'r', 'g'];
+var colorArr     = ['w', 'u', 'b', 'r', 'g'];
+var combArr      = [['cl'],
+                    ['w', 'u', 'b', 'r', 'g'],
+                    ['wu', 'wb', 'wr', 'wg', 'ub', 'ur', 'ug', 'br', 'bg', 'rg'],
+                    ['wub', 'ubr', 'brg', 'rgw', 'gwu', 'wur', 'ubg', 'brw', 'rgu', 'gwb'],
+                    ['wubr', 'ubrg', 'brgw', 'rgwu', 'gwub'],
+                    ['wubrg']
+                    ];
 
-var nameTextOn  = false;
+var nameTextOn   = false;
 
 // Numeric Colors
 function cNumeric(inStr){
   var outStr   = '';
-  var modIdx   = inStr.indexOf('c') + 1;
+  var opIdx   = inStr.indexOf('c') + 1;
   var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
-  var len      = parIdx - modIdx - 1;
-  var inValues = inStr.substr(modIdx + 1, len);
+  var len      = parIdx - opIdx - 1;
+  var inValues = inStr.substr(opIdx + 1, len);
 
   var letStr = '';
-  var numArr = [];
-  inValues.split('').every(function(ele1, idx1, arr1){
-    switch (ele1){
+  var strArr = [];
+  inValues.split('').every(function(ele, idx, arr){
+    switch (ele){
       case '0':
-        numArr.push('c:cl');
+        strArr.push('c:cl');
         break;
       case '1':
-        numArr.push('(-c:m -c:cl)');
+        strArr.push('(-c:m -c:cl)');
         break;
       case '2':
-        numArr.push('(c!wum or c!wbm or c!wrm or c!wgm or c!ubm or c!urm or c!ugm or c!brm or c!bgm or c!rgm)');
+        strArr.push('(c!wum or c!wbm or c!wrm or c!wgm or c!ubm or c!urm or c!ugm or c!brm or c!bgm or c!rgm)');
         break;
       case '3':
-        numArr.push('(c!wubm or c!wurm or c!wugm or c!wbrm or c!wbgm or c!wrgm or c!ubrm or c!ubgm or c!urgm or c!brgm)');
+        strArr.push('(c!wubm or c!wurm or c!wugm or c!wbrm or c!wbgm or c!wrgm or c!ubrm or c!ubgm or c!urgm or c!brgm)');
         break;
       case '4':
-        numArr.push('(c!wubrm or c!ubrgm or c!brgwm or c!rgwum or c!gwubm)');
+        strArr.push('(c!wubrm or c!ubrgm or c!brgwm or c!rgwum or c!gwubm)');
         break;
       case '5':
-        numArr.push('(c!wubrgm)');
+        strArr.push('c!wubrgm');
         break;
       default:
         letStr += ele1;
@@ -48,12 +56,12 @@ function cNumeric(inStr){
     }
     return true;
   });
-  outStr = numArr.join(' or ');
-  if (numArr.length > 1){
+  outStr = strArr.join(' or ');
+  if (strArr.length > 1){
     outStr = '(' + outStr + ')';
   }
-  if (letStr != ''){
-    if (inStr[modIdx] == '!'){ 
+  if (letStr){
+    if (inStr[opIdx] == '!'){ 
       outArr = [];
       letStr.split('').every(function(ele, idx, arr){
         if (colorArr.indexOf(ele) != -1){
@@ -69,14 +77,109 @@ function cNumeric(inStr){
   return outStr;
 }
 
+function ciNumericHelper(num, op, letters){
+  var outArr = [];
+  if (num < combArr.length){
+    combArr[num].every(function(ele1, idx1, arr1){
+      var inString = true;
+
+      if (letters){
+        // Check if every color in this combination is in 'letters'
+        if (op == '!'){
+          ele1.split('').every(function(ele2, idx2, arr2){
+            if (letters.indexOf(ele2) == -1){
+              inString = false;
+              return false;
+            }
+            return true;
+          });
+
+        // Check if any color in this combination is in 'letters'
+        }else{
+          inString = false;
+          ele1.split('').every(function(ele2, idx2, arr2){
+            if (letters.indexOf(ele2) > -1){
+              inString = true;
+              return false;
+            }
+            return true;
+          });
+        }
+      }
+
+      if (inString){
+        outArr.push('ci:' + ele1);
+      }
+
+      return true;
+    });
+  }
+
+  thisStr = outArr.join(' or ');
+  thisStr = '(' + thisStr + ')';
+
+  return thisStr;
+}
+
+// Numeric Color Identity
+function ciNumeric(inStr){
+  var outStr = '';
+  var opIdx    = inStr.indexOf('ci') + 2;
+  var op       = inStr[opIdx];
+  var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
+  var len      = parIdx - opIdx - 1;
+  var inValues = inStr.substr(opIdx + 1, len);
+  
+  var numArr = [];
+  var letStr = '';
+  var strArr = [];
+
+  // Separate the letters from the numbers
+  inValues.split('').every(function(ele, idx, arr){
+    var num = Number(ele);
+    if (num){
+      numArr.push(num);
+    }else{
+      letStr += ele;
+    }
+    return true;
+  });
+
+  numArr.every(function(ele, idx, arr){
+    var thisStr = ciNumericHelper(ele, op, letStr);
+
+    if (ele > 0 && numArr.indexOf(ele - 1) == -1){
+      if (op == '!'){
+        thisStr += ' -' + ciNumericHelper(ele - 1, op, letStr);
+      }else{
+        thisStr += ' -' + ciNumericHelper(ele - 1, op, '');
+      }
+    }
+    strArr.push(thisStr);
+
+    return true;
+  });
+
+  outStr = strArr.join(' or ');
+  if (strArr.length > 1){
+    outStr = '(' + outStr + ')';
+  }
+
+  // if (letStr){
+  //   outStr = '(ci:' + letStr + ' ' + outStr + ')';
+  // }
+
+  return outStr;
+}
+
 // Strict Color Identity
 function ciStrict(inStr){
   if (inStr.match(ciStrictReg) != null){
     var outStr   = '';
-    var modIdx   = inStr.indexOf('ci') + 2;
+    var opIdx   = inStr.indexOf('ci') + 2;
     var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
-    var len      = parIdx - modIdx - 1;
-    var inColors = inStr.substr(modIdx + 1, len);
+    var len      = parIdx - opIdx - 1;
+    var inColors = inStr.substr(opIdx + 1, len);
     if (len > 1){
       outStr = '(ci:' + inColors;
       var combArr = combine(inColors);
@@ -99,10 +202,10 @@ function ciStrict(inStr){
 // Cast With
 function castWith(inStr){
   var outStr   = '';
-  var modIdx   = inStr.indexOf('cw') + 2;
+  var opIdx   = inStr.indexOf('cw') + 2;
   var parIdx   = inStr.indexOf(')') == -1 ? inStr.length : inStr.indexOf(')');
-  var len      = parIdx - modIdx - 1;
-  var inColors = inStr.substr(modIdx + 1, len);
+  var len      = parIdx - opIdx - 1;
+  var inColors = inStr.substr(opIdx + 1, len);
 
   if (inColors.length == 1){
     outStr = 'cmc>0 c:' + inColors;
@@ -132,7 +235,7 @@ function castWith(inStr){
 
   }
 
-  if (inStr[modIdx] == '!'){
+  if (inStr[opIdx] == '!'){
     outStr += ' -c!' + inColors;
   }
   return outStr;
@@ -206,6 +309,8 @@ function parseQuery(inStr){
 function parseChunk(inStr){
   if (inStr.match(cNumericReg) != null){
     inStr = cNumeric(inStr);
+  }else if (inStr.match(ciNumericReg) != null){
+    inStr = ciNumeric(inStr);
   }else if (inStr.match(ciStrictReg) != null){
     inStr = ciStrict(inStr);
   }else if (inStr.match(castWithReg) != null){
@@ -421,6 +526,7 @@ if (q !== null){
         oldStoredQuery = unescape(response.storedQuery[0]).replace('+',' ');
         newStoredQuery = unescape(response.storedQuery[1]).replace('+',' ');
         if (q.value == newStoredQuery){
+          console.log(newStoredQuery);
           q.value = oldStoredQuery;
           document.getElementsByTagName('title')[0].innerHTML = oldStoredQuery;
           q.focus();
